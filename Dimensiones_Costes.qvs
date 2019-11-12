@@ -1,0 +1,137 @@
+Informes:
+LOAD * INLINE [IdInforme, Informe
+1, Budget
+2, Forecast
+7, Flash
+21,Cierre
+];
+
+// FIXME: Conectar a Capacity Plan
+Pais:
+LOAD * INLINE [idBU, BU, Pais
+2, LIM, PE
+3, BGA, CO
+4, SLM, ES
+5, BCN, ES
+6, MAD, ES
+7, SVQ, ES
+8, XRY, ES
+9, ZGZ, ES
+10, LIS, PT
+14, MIL, IT
+16, BCM, ES
+];
+
+Grupos_de_Trabajo:
+LOAD * INLINE [idGrupo, Grupo.Trabajo
+1, Agentes
+2, Team Manager
+3, Ops Manager
+4, SDM
+5, T&Q
+6, WFM
+7, Admon
+8, Otros
+
+];
+
+Orden_MonthlyReport:
+LOAD * INLINE [Grupo.PL, Orden.Monthly_Report
+Servicios,1
+Personnel Costs,2
+Other Costs, 3
+Depreciation, 4
+aaInformatics, 5
+aMBU,6
+
+];
+
+Map_CostesVariables:
+Mapping
+Load * Inline [Cuenta.Contable, Coste.VariableDesc
+640220, ITL
+640103, Idiomas
+640112, Nocturnidad
+640113, Plus Transporte
+640114, Incentivo
+640115, Plus Festivo
+640116, Plus Festivo Esp
+640117, Plus Domingo
+];
+
+//Agrupaciones de conceptos salariales ...
+Grupos_Items_Salario:
+LOAD * Inline[
+Salario.Item, 								Salario.GrupoItem
+Coste ILT,									ILT
+Costes Fijos,								Salario Base	
+Horas IT,									ILT
+Idiomas,									Pluses
+Incentivo,									Incentivos
+Bonus,										Incentivos
+Indemnizacion,								Indemnizaciones
+Ingresos Extraordinarios,					Ingresos	
+Ingresos por actividad,						Ingresos
+Ingresos Serv. Grupo,						Ingresos	
+Nocturnidad,								Pluses
+Otros,										Otros
+Otros Gastos Explotación,					Otros
+Otros Ingresos,								Otros
+Plus Domingo,								Pluses
+Plus Festivo,								Pluses Festivo
+Plus Festivo Esp,							Pluses Festivo
+Importe Plus Festivo Especial,				Pluses Festivo
+Importe Plus Festivo Normal,				Pluses Festivo
+Plus Transporte,							Pluses
+Provisiones Laborales -Dias Habiles,		Provisiones Laborales
+Provisiones Laborales -Indemnizacion,		Provisiones Laborales
+Provisiones Laborales -Otros,				Provisiones Laborales
+Provisiones Laborales -Paga Extra,			Provisiones Laborales
+Provisiones Laborales -Pluses Vacaciones,	Provisiones Laborales
+Provisiones Laborales -Subida Convenio,		Provisiones Laborales
+Provisiones Laborales -Vacaciones,			Provisiones Laborales
+Provisiones Laborales -Variable,			Provisiones Laborales
+Provisiones Laborales -Variable x Incentivos,Provisiones Laborales
+Provisiones Laborales -Variable x vacaciones,Provisiones Laborales
+Seguridad Social							,Seguridad Social
+Importe Horas ETT							,Salario Base
+Importe Incentivos							,Incentivos
+Importe Comisiones							,Incentivos
+Importe Plus Domingos						,Pluses
+Importe Plus Idioma							,Pluses
+Importe Plus Transporte						,Pluses
+Plus de nocturnidad Importe					,Pluses	
+Importe Compensación Festivos				,Pluses Festivo
+Importe Dif Hora N11N10						,Otros
+Importe Hora Niv 10 Niv 8					,Otros
+Importe Hora Niv 11 Niv 8					,Otros
+
+];
+
+Orden_Grupo_Salario:
+LOAD * , RowNo() as Orden.GrupoItem 
+Inline [Salario.GrupoItem
+Salario Base
+Seguridad Social
+ILT
+Pluses
+Pluses Festivo
+Incentivos
+Provisiones Laborales
+Otros
+];
+
+Orden_Nivel3:
+LOAD * INLINE [Nivel3.Orden, Nivel3
+1, Salario Fijo
+2, Complementos
+3, Coste ILT
+4, Incentivos
+5, Pluses
+6, Dias Habiles
+7, Indemnizacion
+8, Variable
+9, Vacaciones
+10, Otros
+
+];
