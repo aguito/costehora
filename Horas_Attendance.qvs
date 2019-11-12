@@ -1,0 +1,304 @@
+//Identificamos las Horas Attendance de cada CECO en el fichero de ETT de ES
+Map_HorasAtt: 
+Mapping
+LOAD 
+	MonthName(MakeDate(ANIO,MES,1)) &'_'& SubproyectoCOD &'_ETT'		                    as %KeyHoras
+	,Horas.Attendance
+;
+LOAD
+	Sum("Unidades Horas ETT")											                    as Horas.Attendance
+	,If(Match(SubproyectoCOD,230173,230174,230175,230176) And MES=1 and ANIO=2018
+		,230170 //Booking
+		,If(Match(SubproyectoCOD,230211,230212) And MES=1 and ANIO=2018
+			,230210 //Amazon
+			,If(Match(SubproyectoCOD,230351,230352,230353,230354,230355,230356,230357) And MES=1 and ANIO=2018
+				,230350 //Eurosport
+				,SubproyectoCOD
+			)
+		)
+	)																	                    as SubproyectoCOD
+	,MES
+	,ANIO
+WHERE GT=1  //Sólo seleccionamos a los agentes, que son los reportados en Capacity
+GROUP BY ANIO, MES, SubproyectoCOD;
+LOAD 
+    "Unidades Horas ETT",
+    "CECO OK"															                    as SubproyectoCOD,
+    ANIO,
+    MES,
+    GT
+;
+SQL SELECT * FROM ETT;
+
+//Obtenemos los % de ETT de Lisboa del ultimo flash de Capacity Plan
+Map_HorasETT_POR: //Total horas Attendance
+Mapping
+LOAD
+	MesAnio &'_'& SubproyectoCOD	                                                        as Key_HorasETT_POR,
+	Sum(ItemValor)					                                                        as Horas.Attendance.POR
+FROM \\10.20.56.177\QlikviewDocs\02.Global_Designer\02.OPS\3.QVD\Capacity\QVD_OPS_Capacity_OperacionesSemanal_REAL.qvd (qvd)
+WHERE InformeID=3 
+	  and SubproyectoID>0 
+	  and Not Match(MesAnio&'_'&BusinessUnitID,'ene 2019_10') //En el mes de enero el item 285 es incorrecto para LATAM y LIS
+	  and Match(BusinessUnitID&'_'&ItemID,'10_285')
+Group By MesAnio &'_'& SubproyectoCOD;
+
+// Conn Capacity Plan ...
+OLEDB CONNECT32 TO [Provider=SQLOLEDB.1;
+					Persist Security Info=True;
+					User ID=qlikview_reload;
+					Data Source=10.20.56.162;
+					Use Procedure for Prepare=1;
+					Auto Translate=True;
+					Packet Size=4096;
+					Workstation ID=QLIK;
+					Use Encryption for Data=False;
+					Tag with column collation when possible=False] (XPassword is WTRLZYZOfSMATYQGfScYWNA)
+;
+
+Map_GloblaCeco_PT:
+Mapping LOAD idClient, Min(id) GROUP BY idClient;
+SQL SELECT id, idClient FROM StaffPlanningV3.dbo.tbSubproyectos WHERE idBU=10;
+
+Map_Codigo_GloblaCeco_PT: 
+Mapping SQL SELECT id, Codigo FROM StaffPlanningV3.dbo.tbSubproyectos WHERE idBU=10;
+
+Map_CECOS_PT:
+Mapping Load Codigo, ApplyMap('Map_Codigo_GloblaCeco_PT',id_Global,0) as Codigo_Global;
+LOAD Codigo, ApplyMap('Map_GloblaCeco_PT',idClient,0) as id_Global Where Not IsNUll(idClient);
+SQL SELECT id, Codigo, idClient FROM StaffPlanningV3.dbo.tbSubproyectos WHERE idBU=10;
+
+// %Horas ETT Portugal -------------------------------------------------------------------------------
+
+//Identificamos el ultimo flash de cada CECO de LIS:
+Max_Week:
+Mapping 
+LOAD MonthName(MakeDate(Annio,Mes,1)) as MesAnio, MaxWeek;
+LOAD Annio,	Mes, Max(Semana) as MaxWeek Group By Annio, Mes;
+SQL SELECT * FROM StaffPlanningV3.HST.HST_tbVersion WHERE Annio>2018 and idInforme=7;
+
+Map_Version:
+Mapping 
+LOAD
+	MonthName(MakeDate(Annio,Mes,1)) as MesAnio,
+	idVersion
+Where Semana=ApplyMap('Max_Week',MonthName(MakeDate(Annio,Mes,1)),0)
+;
+Load
+	Annio,
+	Mes,
+	Semana,
+	Max(id)							 as idVersion
+Group By Annio, Mes, Semana
+;
+SQL SELECT * FROM StaffPlanningV3.HST.HST_tbVersion
+WHERE Annio>2018 and idInforme=7;
+
+//Obtenemos la equivalencia de idSubproyectoPK y Codigo de Centro de Coste de LIS
+Map_SubproyectoPK: Mapping SQL SELECT id, Codigo FROM StaffPlanningV3.dbo.tbSubproyectos WHERE idBU=10;
+
+//Obtenemos el item 290 y 300 agregado por subproyecto de LIS
+Map_290: //Coste arvato
+Mapping
+LOAD
+	MesAnio&'_'&idSubproyectoPK 	as Key290,
+	Valor							as Valor290
+WHERE ApplyMap('Map_Version',MesAnio,0)=idVersion; //Nos quedamos con la ultima version historificada
+LOAD
+	MonthName(MakeDate(Año,Mes,1)) as MesAnio,
+	idSubproyectoPK,
+	idVersion,
+	Valor
+; 
+LOAD
+	Año,
+	Mes,
+	idSubproyectoPK,
+	idVersion,
+	Sum(ValorItem)					 as Valor
+Group By Año, Mes, idVersion, idSubproyectoPK;
+SQL SELECT * FROM StaffPlanningV3.HST.HST_tbInformesGastos
+WHERE Año>2018 and idTipoInforme=7 and idServicioPk>0 and idItem=290; //Solo cogemos dato de LIS (idServicioPK>0)
+
+temp_300: //Coste ETT
+NoConcatenate
+LOAD * WHERE ApplyMap('Map_Version',MonthName(MakeDate(Año,Mes,1)),0)=idVersion; //Nos quedamos con la ultima version historificada
+LOAD
+	Año,
+	Mes,
+	idItem,
+	idSubproyectoPK,
+	idVersion,
+	Sum(ValorItem)					 as Valor300
+Group By Año, Mes, idItem, idVersion, idSubproyectoPK;
+SQL SELECT * FROM StaffPlanningV3.HST.HST_tbInformesGastos
+WHERE Año>2018 and idTipoInforme=7 and idServicioPk>0 and idItem=300; //Solo cogemos dato de LIS (idServicioPK>0)
+
+Map_HorasAtt:
+Mapping
+LOAD
+	%KeyHoras
+	,Sum(Horas.Attendance)																	as Horas.Att
+GROUP BY %KeyHoras;
+LOAD
+	MesAnio &'_'& Applymap('Map_CECOS_PT',SubproyectoCOD,SubproyectoCOD) &'_ETT'			as %KeyHoras
+	,Valor*ApplyMap('Map_HorasETT_POR',MesAnio &'_'& SubproyectoCOD,0)						as Horas.Attendance
+;
+LOAD *
+	,If(Valor300>0,Valor300/(ApplyMap('Map_290',MesAnio&'_'&idSubproyectoPK,0)+Valor300),0)	as Valor //Evitamos el 0/0 con la clausula IF
+;
+LOAD
+	MonthName(MakeDate(Año,Mes,1)) 															as MesAnio
+	,Applymap('Map_SubproyectoPK',idSubproyectoPK,0)										as SubproyectoCOD
+	,Valor300
+	,idSubproyectoPK
+Resident temp_300;
+
+DROP TABLE temp_300;
+
+
+// NOTE: 05.07.2019 Se utiliza el qvd creado por Sara con los datos reales
+Horas_Attendance:
+NoConcatenate
+LOAD
+	%Key &'_majorel'																		as %KeyHoras
+	,MesAnio
+	,SubproyectoCOD																			as CentroCoste
+	,TotalItemValor																			as Horas.Attendance//2
+//	,If(Alt(TotalItemValor,0)-ApplyMap('Map_HorasAtt',%Key&'_ETT',0)<0
+//		,0 														//Solo hay horas de ETT
+//		,TotalItemValor-ApplyMap('Map_HorasAtt',%Key&'_ETT',0)	//Calculo las horas Attendance de Majorel por diferencia, total-ETT
+//
+	,'majorel'																				as Horas.Empresa	
+;
+LOAD
+	%Key
+	,MesAnio
+	,SubproyectoCOD
+	,Sum(SumItemValor)																		as TotalItemValor
+GROUP BY %Key, MesAnio,SubproyectoCOD
+;
+LOAD *
+	,MonthName(MakeDate(Year(MesAnio),Month(MesAnio),1)) &'_'& SubproyectoCOD				as %Key
+;
+LOAD
+	MesAnio,	
+	If(Match(SubproyectoCOD,230173,230174,230176) And Month(MesAnio)=1 and Year(MesAnio)=2018
+		,230170 //Booking
+		,If(Match(SubproyectoCOD,230211,230212) And Month(MesAnio)=1 and Year(MesAnio)=2018
+			,230210 //Amazon
+			,If(Match(SubproyectoCOD,230351,230352,230353,230354,230355,230356,230357) And Month(MesAnio)=1 and Year(MesAnio)=2018
+				,230350 //Eurosport
+				,SubproyectoCOD  //,Applymap('Map_CECOS_PT',SubproyectoCOD,SubproyectoCOD)
+			)
+		)
+	)																						as SubproyectoCOD,
+	Sum(ItemValor)																			as SumItemValor
+FROM \\10.20.56.177\QlikviewDocs\02.Global_Designer\02.OPS\3.QVD\Capacity\QVD_OPS_Capacity_OperacionesSemanal_REAL.qvd (qvd)
+WHERE InformeID=3 
+	  and SubproyectoID>0 
+	  and Not Match(MesAnio&'_'&BusinessUnitID,'ene 2019_2','ene 2019_3','ene 2019_10') //En el mes de enero el item 285 es incorrecto para LATAM y LIS
+	  and Match(BusinessUnitID&'_'&ItemID,'2_285','3_285','4_75','5_75','6_75','8_75','9_75','10_285','16_75')
+Group By MesAnio, SubproyectoCOD;
+
+//Agregamos los datos del Item 75 en lugar el 285 en el mes de enero para LATAM y LIS porque salen incorrectamente
+Concatenate (Horas_Attendance)
+LOAD
+	%Key &'_majorel'																		as %KeyHoras
+	,MesAnio
+	,SubproyectoCOD																			as CentroCoste
+	,TotalItemValor																			as Horas.Attendance2
+	,If(Alt(TotalItemValor,0)-ApplyMap('Map_HorasAtt',%Key&'_ETT',0)<0
+		,0 														//Solo hay horas de ETT
+		,TotalItemValor-ApplyMap('Map_HorasAtt',%Key&'_ETT',0)	//Calculo las horas Attendance de Majorel por diferencia, total-ETT
+	)																						as Horas.Attendance	
+	,'majorel'																				as Horas.Empresa	
+;
+LOAD
+	%Key
+	,MesAnio
+	,SubproyectoCOD
+	,Sum(SumItemValor)																		as TotalItemValor
+GROUP BY %Key, MesAnio,SubproyectoCOD
+;
+LOAD *
+	,MonthName(MakeDate(Year(MesAnio),Month(MesAnio),1)) &'_'& SubproyectoCOD				as %Key
+;
+LOAD
+	MesAnio,	
+	If(Match(SubproyectoCOD,230173,230174,230176) And Month(MesAnio)=1 and Year(MesAnio)=2018
+		,230170 //Booking
+		,If(Match(SubproyectoCOD,230211,230212) And Month(MesAnio)=1 and Year(MesAnio)=2018
+			,230210 //Amazon
+			,If(Match(SubproyectoCOD,230351,230352,230353,230354,230355,230356,230357) And Month(MesAnio)=1 and Year(MesAnio)=2018
+				,230350 //Eurosport-Discovery
+				,Applymap('Map_CECOS_PT',SubproyectoCOD,SubproyectoCOD)
+			)
+		)
+	)																						as SubproyectoCOD,
+	Sum(ItemValor)																			as SumItemValor
+FROM \\10.20.56.177\QlikviewDocs\02.Global_Designer\02.OPS\3.QVD\Capacity\QVD_OPS_Capacity_OperacionesSemanal_REAL.qvd (qvd)
+WHERE InformeID=3 
+	  and SubproyectoID>0 
+	  and Match(MesAnio&'_'&BusinessUnitID,'ene 2019_2','ene 2019_3','ene 2019_10') //En el mes de enero el item 285 es incorrecto para LATAM y LIS
+	  and Match(BusinessUnitID&'_'&ItemID,'2_75','3_75','10_75')
+Group By MesAnio, SubproyectoCOD;
+
+Concatenate //Agregamos las horas de ETT ...
+LOAD
+	MesAnio &'_'&CentroCoste&'_ETT'															as %KeyHoras
+	,MesAnio
+	,CentroCoste
+	,ApplyMap('Map_HorasAtt',MesAnio &'_'&CentroCoste&'_ETT',0)								as Horas.Attendance
+	,'ETT'																					as Horas.Empresa	
+Resident Horas_Attendance;	
+
+//H_Attendance:
+Datos_Capacity:
+NoConcatenate
+LOAD 
+	%KeyHoras
+	,CentroCoste
+	,1																						as GrupoTrabajo
+	,MesAnio
+	,Horas.Attendance
+	,Horas.Empresa																			as Entidad
+Resident Horas_Attendance;
+
+//Agregamos las horas de GOOGLE que actualmente no se estan reportando en Capacity Plan
+tmp_Google_Hours:
+CrossTable(Mes, Datos)
+LOAD 
+	 F1, 
+     Jan, 
+     Feb, 
+     Mar, 
+     Apr, 
+     May, 
+     Jun, 
+     Jul, 
+     Aug, 
+     Sep, 
+     Oct, 
+     Nov, 
+     Dec
+FROM
+[\\10.20.56.177\QlikviewDocs\02.Global_Designer\01.FI\1.SourceData\Fact Table\GOOGLE\HORAS_GOOGLE.xlsx]
+(ooxml, embedded labels, table is [Google Hours]);
+
+Concatenate(Datos_Capacity)
+LOAD *,	MesAnio &'_'&CentroCoste&'_majorel'														as %KeyHoras;
+LOAD
+
+	MonthName(MakeDate(2019
+			  ,Replace(Replace(Replace(Replace(Replace(Replace(Replace(Replace(Replace(Replace(Replace(Replace(Mes,'Jan',1),'Feb',2),'Mar',3),'Apr',4),'May',5),'Jun',6),'Jul',7),'Aug',8),'Sep',9),'Oct',10),'Nov',11),'Dec',12)
+			  ,1))																				as MesAnio
+	,730170																						as CentroCoste
+	,1																							as GrupoTrabajo
+	,Datos																						as Horas.Attendance
+	,'majorel'																					as Entidad	
+Resident tmp_Google_Hours
+Where Match(F1,'CSR Attendance hours');
+
+DROP Table tmp_Google_Hours;
+DROP Table Horas_Attendance;
