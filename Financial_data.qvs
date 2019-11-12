@@ -1,0 +1,103 @@
+//CIERRE
+Concatenate(DATA)
+LOAD *
+    ,%Key&'_majorel'                                                        as %KeyHoras
+    ,'Majorel'                                                              as Entidad
+    ,(Valor*-1)-If(NoES=1
+        ,applymap('Map_CostesETT', MonthName(MakeDate(AnnioInforme,MesInforme,1)) &'_'& CodSubproyecto &'_'& idGrupo,0)
+        ,0
+    )                                                                       as Importe
+;
+LOAD * 
+     ,idGrupo &'_'& Monthly_Report                                          as %Grupo.PL
+     ,MonthName(MakeDate(AnnioInforme,MesInforme,1)) &'_'& CodSubproyecto	as %Key
+FROM $(vQVDPath)FI_CIERRE.qvd (qvd) 
+WHERE AnnioInforme>=2018 and Nivel='EBIT' and idBU<>100 and Match(idGrupo,1,2,3,4,5,6,7,8,9,10,14,21);
+
+//BUDGED
+//TODO Agregar datos de Budget
+
+//FORECAST
+//TODO Agregar datos de Forecast
+
+//ULTIMO FLASH
+//TODO Agregar datos del Último Flash
+
+//-------------------------------------------------------------------------------------------------------------
+//Construimos las dimensiones de agrupaciones especificas del informe
+//-------------------------------------------------------------------------------------------------------------
+GruposPL:
+Load DISTINCT 
+    idGrupo &'_'& Monthly_Report                                            as %Grupo.PL
+    ,If(Match(idGrupo,14,10,9) //No queremos mostrar el detalle, lo queremos agregado
+        ,Replace(
+                Replace(Monthly_Report,'Personnel Costs','aaInformatics')   //aainformatics pertenece a Personnel Costs
+                ,'Otros Ingresos','Servicios')                              //Solo mostramos 1 Item para Revenue
+        ,If(Match(Monthly_Report,'Depreciation','Other Costs')
+            ,Replace(Monthly_Report,'Otros Ingresos','Servicios')
+            ,Monthly_Report
+        )
+    )                                                                       as Grupo.PL
+Resident DATA;
+
+//-------------------------------------------------------------------------------------------------------------
+//Construimos los Nivel de agrupacion de las cuentas contables para el informe
+//-------------------------------------------------------------------------------------------------------------
+
+Level_2:
+Load 
+    idCuenta,
+    If(Match(Nivel_2,'Sueldos y Salarios') and Nivel_3='Costes Variables'
+        ,If(Match(idCuenta,640108,640109,640118,640213,640124,640126,640156,640237) //Cuentas de Coste VArianble que se quieren mostrar como coste fijo
+            ,'Costes Salariales'
+            ,'Costes Variables'
+        )
+        ,If(Match(idCuenta,640912) //Provision PLus 15/15, promedio de pluses y festivos
+            ,'Costes Variables'
+            ,Replace(Nivel_2,'Sueldos y Salarios','Costes Salariales')
+        )
+    )                                                                       as Nivel2
+Resident DATA;
+
+Level_3:
+Load 
+    idCuenta,
+    If(Match(Nivel_3,'Costes Variables')
+        ,If(WildMatch(Nivel_5,'*Incentivo*')
+            ,'Incentivos'
+            ,If(Match(idCuenta,640108,640109,640118,640213)
+                ,'Complementos'
+                ,If(Match(idCuenta,640124,640256,640126,640156,640237)
+                    ,'Salario Fijo'
+                    ,'Pluses'
+                )
+            )
+        )
+        ,If(Match(idCuenta,640912)
+            ,'Pluses'
+            ,Replace(Nivel_3,'Costes Fijos','Salario Fijo')
+        )      
+    )                                                                       as Nivel3
+Resident DATA;
+
+Level_4:
+Load 
+    idCuenta,
+    If(Match(Nivel_3,'Costes Variables')
+        ,If(WildMatch(Nivel_5,'*Incentivo*') or Match(Nivel_4,'Complementos')
+            ,Null()
+            ,Pick(Match(idCuenta,640220,640103,640112,640113,640115,640116,640117,640208,640136)
+                , 'ITL'
+                , 'Idiomas'
+                , 'Nocturnidad'
+                , 'Plus Transporte'
+                , 'Plus Festivo'
+                , 'Plus Festivo Esp'
+                , 'Plus Domingo'
+                , 'Bonus'
+                , 'Prom Plus Vaca año'
+            )
+        )
+        ,Null()
+     )                                                                       as Nivel4
+Resident DATA;
