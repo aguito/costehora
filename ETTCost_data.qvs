@@ -188,4 +188,4 @@ Group By ANIO,MES,[CECO OK],GT;
 
 DROP Table tmp_ETT;
 
-Map_CosteETT: Mapping Load %KeyHoras &'_'& idGrupo, Importe Resident DATA;
+Map_CostesETT: Mapping Load %KeyHoras &'_'& idGrupo, Importe Resident DATA;
