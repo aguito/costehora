@@ -1,0 +1,191 @@
+//Mapeamos los GT 
+Map_GTCdG:
+Mapping
+LOAD 
+	`ID empleado` &'_'& MES &'_'& ANIO		as %KeyEmpleado
+    ,`GT - CG`								as GT_CDG
+;
+SQL SELECT *
+FROM `Activos_TOTAL_CdG2`;
+
+//Creamos una tabla Temporal de los datos de ETT de ES
+tmp_ETT:
+Crosstable (Salario.Item,Valor,107)
+LOAD
+	[Agrupacion Centro Coste] 
+	,ANIO 
+	,[Apellidos y Nombres] 
+	,Categoria 
+	,CECO 
+	,[CECO OK] 
+	,[Centro Trabajo] 
+	,Check 
+	,[Contrato (Fijo o Eventual)] 
+	,[Contrato Legal] 
+	,Empresa 
+	,ESTADO 
+	,ETT 
+	,ETT2 
+	,[Fecha de Antigüedad] 
+	,[Fecha de Fin] 
+	,[Fecha de Inicio] 
+	,[Fin Fecha Imputación] 
+	,[Fin Previsto Contrato] 
+	,[FTE's] 
+	,GT 
+	,[Hora N11 N7] 
+	,[ID Agrup Centro Coste] 
+	,[Id Categoria]
+	,[Id Centro Trabajo]
+	,[ID Convenio] 
+	,[Id Empleado] 
+	,[Id Empresa] 
+	,[ID Lugar trabajo] 
+	,[Id Posicion] 
+	,[Id Puesto] 
+	,[ID Tipo Actividad] 
+	,[Id Unid Org] 
+	,[Inicio Fecha Imputación] 
+	,MES
+	,NIF
+	,[Nombre Contrato] 
+	,[Nombre del lugar de trabajo] 
+	,[Nombre Tipo Actividad] 
+	,[Nº Matricula] 
+	,Periodo 
+	,PIVOT 
+	,PLAT
+	,[Plus de nocturnidad Precio] 
+	,[Plus de nocturnidad Unidad] 
+	,[Porcentaje Comisión Correción E] 
+	,[Porcentaje Comisión Correción E2] 
+	,[Porcentaje Correción ETT] 
+	,[Porcentaje Dietas Correción ETT] 
+	,[Porcentaje Dietas Correción ETT2] 
+	,[Porcentaje Domingos Correción E] 
+	,[Porcentaje Domingos Correción E2] 
+	,[Porcentaje Festivos Correción E] 
+	,[Porcentaje Festivos Correción E2] 
+	,[Porcentaje Festivos Especial Co] 
+	,[Porcentaje Festivos Especial Co2] 
+	,[Porcentaje Idiomas Correción ET] 
+	,[Porcentaje Incentivos Correción] 
+	,[Porcentaje IRPF]
+	,[Porcentaje Jornada] 
+	,[Porcentaje Nocturnidad Correció] 
+	,[Porcentaje Nocturnidad Correció2] 
+	,[Porcentaje Transporte Correción] 
+	,Posicion 
+	,[Precio Comisiones]
+	,[Precio Compensación Festivos]
+	,[Precio Complemento Actividad]
+	,[Precio Dieta Completa ETT] 
+	,[Precio Diferencia superior cate] 
+	,[Precio Hora Dif N11N10] 
+	,[Precio Hora N11N7] 
+	,[Precio Hora N11N8] 
+	,[Precio Hora Niv 10 Niv 7] 
+	,[Precio Hora Niv 10 Niv 8] 
+	,[Precio Hora Niv 8 Niv 7] 
+	,[Precio Horas ETT] 
+	,[Precio Plus Domingo Cat Sup] 
+	,[Precio Plus Domingos] 
+	,[Precio Plus Festivo Especial Ca] 
+	,[Precio Plus Festivo Normal Cat] 
+	,[Precio Plus Festivos Especiales] 
+	,[Precio Plus Festivos Normales] 
+	,[Precio Plus Transporte] 
+	,Puesto 
+	,QUA_U_HORA_N10_N8 
+	,RS
+	,Sexo 
+	,[Tipo de parcialidad] 
+	,[Unidad Compensación de Festivos] 
+	,[Unidad Complemento Actividad] 
+	,[Unidad Hora Dif N11 N10] 
+	,[Unidad Hora Niv 10 Niv 7] 
+	,[Unidad Hora Niv 8 Niv 7] 
+	,[Unidad Hora Niv11 Niv8] 
+	,[Unidad Organizativa] 
+	,[Unidad Plus Domingos] 
+	,[Unidad Plus Festivo Normal] 
+	,[Unidad Plus Festivos Especiales] 
+	,[Unidad Plus Idioma] 
+	,[Unidad Plus Transporte] 
+	,[Unidades Comisiones] 
+	,[Unidades Dieta Completa ETT] 
+	,[Unidades Horas ETT] 
+	,[Unidades Plus Domingo Cat Sup] 
+	,[Unidades Plus Festivo Especial] 
+	,[Unidades Plus Festivo Normal Ca] 
+	,[Unidades Superior Categoría] 
+	,[Importe Comisiones] 
+	,[Importe Compensación Festivos] 
+	,[Importe Complemento Actividad] 
+	,[Importe Dieta Completa ETT] 
+	,[Importe Dif Hora N11N10] 
+	,[Importe Diferencia Superior Cat] 
+	,[Importe Hora N11N7] 
+	,[Importe Hora Niv 10 Niv 8] 
+	,[Importe Hora Niv 11 Niv 8] 
+	,[Importe Hora Niv 8 Niv 7] 
+	,[Importe Horas ETT] 
+	,[Importe Incentivos] 
+	,[Importe Plus Domingo Cat Sup] 
+	,[Importe Plus Domingos] 
+	,[Importe Plus Festivo Especial] 
+	,[Importe Plus Festivo Especial C] 
+	,[Importe Plus Festivo Normal] 
+	,[Importe Plus Festivo Normal Cat] 
+	,[Importe Plus Idioma]
+	,[Importe Plus Transporte] 
+	,[Improte Hora Niv 10 Niv 7] 
+	,[Plus de nocturnidad Importe]
+	//,[Total Devengos] 			
+;
+SQL SELECT * FROM ETT;
+
+DATA:
+LOAD 
+	//MonthName(MakeDate(ANIO ,MES,1)) &'_'& [CECO OK] &'_'& GrupoTrabajo &'_'& Upper(Left(ETT,2))	as %KeyLink,
+	MonthName(MakeDate(AnnioInforme,MesInforme,1)) &'_'& [CECO OK]	&'_ETT'			as %KeyHoras,
+	//MonthName(MakeDate(AnnioInforme,MesInforme,1))													as MesAnio,
+	[CECO OK]																		as CodSubproyecto,
+	GrupoTrabajo                                                                    as idGrupo,
+	Grupo2,
+	Valor																			as Importe,
+	Salario.Item                                                                    as idItem,
+	'ETT'																		    as Entidad
+;
+LOAD *
+	,If(
+		IsNull(Num(ApplyMap('Map_GTCdG',%KeyEmpleado,GrupoTrabajo.RRHH)))
+			,Alt(GrupoTrabajo.RRHH,1)
+			,AlT(Num(ApplyMap('Map_GTCdG',%KeyEmpleado,GrupoTrabajo.RRHH)),1)
+	)															 					as GrupoTrabajo //Consideramos el GT reportado por OPS
+;
+LOAD
+	`Id Empleado` &'_'& MES &'_'& ANIO 												as %KeyEmpleado,
+	ANIO                                                                            as AnnioInforme,
+	MES                                                                             as MesInforme,
+	[CECO OK],
+	GT,
+	ETT,
+    GT																			    as GrupoTrabajo.RRHH,
+    'Production'																	as Grupo2, 
+    Valor																			as Valor, 
+    Salario.Item
+Resident tmp_ETT;
+
+//Inyectamos en OTROS la diferencia con la info de contabilidad ya que no se consideran retros, ajustes, etc en el fichero de ETT mensual
+//para ello calculamos el valor del fichero ...
+Calculo_Total_ETT:
+LOAD 
+	ANIO &'_'& MES &'_'& [CECO OK] &'_'& GT 										as KEY
+	,Sum(Valor)*-1																	as Valor
+Resident tmp_ETT
+Group By ANIO,MES,[CECO OK],GT;
+
+DROP Table tmp_ETT;
+
+Map_CosteETT: Mapping Load %KeyHoras &'_'& idGrupo, Importe Resident DATA;
