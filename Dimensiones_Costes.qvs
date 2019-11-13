@@ -135,31 +135,3 @@ LOAD * INLINE [Nivel3.Orden, Nivel3
 10, Otros
 
 ];
-
-Map_Conv_Cuentas_ETT:
-Mapping
-Load * Inline [idItem,idCuenta
-Importe Comisiones,	            640114
-Importe Compensación Festivos,	640101
-Importe Complemento Actividad,	640118
-Importe Dieta Completa ETT,	    640101
-Importe Dif Hora N11N10,	    6401200
-Importe Diferencia Superior Cat,640101
-Importe Hora N11N7,	            6401200
-Importe Hora Niv 10 Niv 8,	    6401200
-Importe Hora Niv 11 Niv 8,	    6401200
-Importe Hora Niv 8 Niv 7,	    6401200
-Importe Horas ETT,	            640101
-Importe Incentivos,	            640114
-Importe Plus Domingo Cat Sup,	640117
-Importe Plus Domingos,	        640117
-Importe Plus Festivo Especial,	640116
-Importe Plus Festivo Especial C,640116
-Importe Plus Festivo Normal,	640115
-Importe Plus Festivo Normal Cat,640115
-Importe Plus Idioma,	        640103
-Importe Plus Transporte,	    640113
-Improte Hora Niv 10 Niv 7,	    6401200
-Plus de nocturnidad Importe,	640112
-Ajustes ETT,                    6409999
-];
